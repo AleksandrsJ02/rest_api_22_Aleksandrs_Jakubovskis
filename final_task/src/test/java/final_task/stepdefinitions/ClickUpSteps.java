@@ -1,59 +1,103 @@
 package final_task.stepdefinitions;
 
+import final_task.domain.Folder;
+import final_task.domain.List;
+import final_task.domain.Space;
+import final_task.domain.Task;
+import final_task.helpers.TestCaseContext;
+import final_task.helpers.RandomNameGenerator;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 import io.restassured.response.Response;
+import org.assertj.core.api.Assertions;
 
-//import static final_task.clients.ClickUpClient.createFolder;
-import static final_task.clients.ClickUpClient.getSpaceInfo;
+import static final_task.clients.ClickUpClient.*;
 import static final_task.constants.ProjectConstants.SPACE_ID;
+import static final_task.constants.ProjectConstants.SPACE_NAME;
 
 public class ClickUpSteps {
     @Given("Space exists and contains correct information")
     public void getSpaceAndCheckInfo() {
         Response response = getSpaceInfo(SPACE_ID);
+        Space space = response.as(Space.class);
+
+        Assertions.assertThat(space.getId())
+                .as("We assert that id of the space is correct")
+                .isEqualTo(SPACE_ID);
+
+        Assertions.assertThat(space.getName())
+                .as("We assert that name of the space is correct")
+                .isEqualTo(SPACE_NAME);
     }
 
-    @When("Create folder with {string} name")
-    public void createFolder(String folderName) {
-        System.out.println("2nd step executed");
-        //Response response = createFolder(folderName, SPACE_ID);
+    @When("Create, save folder with {string} name and verify that the name is correct")
+    public void createAndSaveFolder(String folderName) {
+        Response response = postFolder(folderName, SPACE_ID);
+        Folder folder = response.as(Folder.class);
+
+        Assertions.assertThat(folder.getName())
+                .as("We assert that the name of the folder is correct")
+                .isEqualTo(folderName);
+
+        TestCaseContext.setFolder(folder);
     }
 
-    @And("Save folder data and verify that the name of the folder is correct")
-    public void saveFolderData() {
-        System.out.println("3rd step executed");
-    }
+    @Then("Create a new List with {string} name in the Folder")
+    public void createList(String listName) {
+        Response response = createListFolder(listName, TestCaseContext.getFolder().getId());
+        List list = response.as(List.class);
 
-    @Then("Create a new List in the Folder")
-    public void createList() {
-        System.out.println("4th step executed");
+        TestCaseContext.setList(list);
     }
 
     @And("Verify that the List name is correct and added to the correct folder")
     public void verifyListNameCorrect() {
-        System.out.println("5th step executed");
+        Response response = verifyListName(TestCaseContext.getList().getId());
+        List list = response.as(List.class);
+
+        Assertions.assertThat(list.getName())
+                .as("We assert that the List name is correct")
+                .isEqualTo(TestCaseContext.getList().getName());
+
+        Assertions.assertThat(list.getFolderObject().getId())
+                .as("We assert that the list is added to the correct folder")
+                .isEqualTo(TestCaseContext.getFolder().getId());
     }
 
-    @Then("Create one Task in the list")
+    @Then("Create Task with with auto-generated name in the list")
     public void createTask() {
-        System.out.println("6th step executed");
+        RandomNameGenerator classObj = new RandomNameGenerator();
+        String taskName = classObj.generateRandomName();
+
+        Response response = createTaskInList(taskName, TestCaseContext.getList().getId());
+        Task task = response.as(Task.class);
+
+        TestCaseContext.setTask(task);
     }
 
     @And("Verify Task name is correct")
     public void verifyTaskName() {
-        System.out.println("7th step executed");
+        Response response = checkTaskName(TestCaseContext.getTask().getId());
+        Task task = response.as(Task.class);
+
+        Assertions.assertThat(task.getName())
+                .as("We assert that the task name is correct")
+                .isEqualTo(TestCaseContext.getTask().getName());
     }
 
     @Then("Remove the Task from the list")
     public void removeTheTask() {
-        System.out.println("8th step executed");
+        Response response = deleteTask(TestCaseContext.getTask().getId());
     }
 
     @And("Fetch the List and verify the Task can't be found")
     public void fetchTheList() {
-        System.out.println("9th step executed");
+        Response response = verifyTaskCantBeFound(TestCaseContext.getTask().getId());
+
+        Assertions.assertThat((response.statusCode()))
+                .as("We assert that the task can not be found anywhere")
+                .isEqualTo(404);
     }
 }

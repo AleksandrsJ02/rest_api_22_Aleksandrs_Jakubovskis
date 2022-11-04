@@ -1,0 +1,12 @@
+final_task/domain/Folder.class
+final_task/helpers/RandomNameGenerator.class
+final_task/stepdefinitions/ClickUpSteps.class
+final_task/domain/Space.class
+final_task/testRunner/TestRunner.class
+final_task/domain/Task.class
+final_task/helpers/TestCaseContext.class
+final_task/domain/List.class
+final_task/clients/ClickUpClient.class
+final_task/stepdefinitions/Hooks.class
+final_task/domain/FolderIdFromList.class
+final_task/constants/ProjectConstants.class
